@@ -1,149 +1,200 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import TodayHighlights from "./TodayHighlights";
-import {
-  cloudgif,
-  overcastclouds,
-  fewclouds,
-  humidityimage,
-  loader,
-  windimage,
-  visibilityimage,
-  airpresureimage,
-} from "../assets/Gallery";
 import UpComingDays from "./UpComingDays";
 import axios from "axios";
+import { WiDaySunny, WiRain, WiSnow, WiThunderstorm, WiCloudy, WiDayCloudy, WiFog } from "react-icons/wi";
+import { FiDroplet, FiWind, FiEye, FiBarChart2 } from "react-icons/fi";
+import { BsCalendarDate, BsGeoAlt, BsClouds } from "react-icons/bs";
+import { ImSpinner8 } from "react-icons/im";
 
-function Content({ sname, setName }) {
-  const [data, setData] = useState([]);
+function Content({ sname }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Weather icon mapping
+  const weatherIcons = {
+    "01d": <WiDaySunny size={80} />,
+    "01n": <WiDaySunny size={80} />,
+    "02d": <WiDayCloudy size={80} />,
+    "02n": <WiDayCloudy size={80} />,
+    "03d": <WiCloudy size={80} />,
+    "03n": <WiCloudy size={80} />,
+    "04d": <WiCloudy size={80} />,
+    "04n": <WiCloudy size={80} />,
+    "09d": <WiRain size={80} />,
+    "09n": <WiRain size={80} />,
+    "10d": <WiRain size={80} />,
+    "10n": <WiRain size={80} />,
+    "11d": <WiThunderstorm size={80} />,
+    "11n": <WiThunderstorm size={80} />,
+    "13d": <WiSnow size={80} />,
+    "13n": <WiSnow size={80} />,
+    "50d": <WiFog size={80} />,
+    "50n": <WiFog size={80} />
+  };
+
   useEffect(() => {
     const fetchData = async () => {
-      if (!sname && sname === "") return;
+      if (!sname) return;
+      
+      setLoading(true);
+      setError(null);
+      
       try {
         const res = await axios.get(
           `https://api.openweathermap.org/data/2.5/forecast?q=${sname}&appid=0a1a86f7c1264036183ce598dbf395b8&units=metric`
         );
-        setData({
-          celcius1: res.data.list[0].main.feels_like,
-          celcius2: res.data.list[8].main.feels_like,
-          celcius3: res.data.list[16].main.feels_like,
-          celcius4: res.data.list[24].main.feels_like,
-          celcius5: res.data.list[32].main.feels_like,
-          country: res.data.city.country,
-          city: res.data.city.name,
-          status: res.data.list[0].weather[0].main,
-          description: res.data.list[0].weather[0].description,
-          date: res.data.list[0].dt_txt,
-          wind: res.data.list[0].wind.speed,
-          humidity: res.data.list[0].main.humidity,
-          visibility: res.data.list[0].visibility,
-          pressure: res.data.list[0].main.pressure,
-          date1: res.data.list[0].dt_txt.slice(0, 10),
-          date2: res.data.list[8].dt_txt.slice(0, 10),
-          date3: res.data.list[16].dt_txt.slice(0, 10),
-          date4: res.data.list[24].dt_txt.slice(0, 10),
-          date5: res.data.list[32].dt_txt.slice(0, 10),
-          icon1: res.data.list[0].weather[0].icon,
-          icon2: res.data.list[8].weather[0].icon,
-          icon3: res.data.list[16].weather[0].icon,
-          icon4: res.data.list[24].weather[0].icon,
-          icon5: res.data.list[32].weather[0].icon,
-        });
-      } catch (error) {
-        console.error("API error:", err.code);
+        
+        const forecastData = {
+          current: {
+            temp: res.data.list[0].main.temp,
+            feels_like: res.data.list[0].main.feels_like,
+            humidity: res.data.list[0].main.humidity,
+            wind: res.data.list[0].wind.speed,
+            visibility: (res.data.list[0].visibility / 1000).toFixed(1),
+            pressure: res.data.list[0].main.pressure,
+            status: res.data.list[0].weather[0].main,
+            description: res.data.list[0].weather[0].description,
+            icon: res.data.list[0].weather[0].icon,
+            date: new Date(res.data.list[0].dt_txt).toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              month: 'short', 
+              day: 'numeric' 
+            })
+          },
+          location: {
+            city: res.data.city.name,
+            country: res.data.city.country
+          },
+          forecast: [
+            res.data.list[8],
+            res.data.list[16],
+            res.data.list[24],
+            res.data.list[32]
+          ].map(item => ({
+            temp: item.main.temp,
+            feels_like: item.main.feels_like,
+            date: new Date(item.dt_txt).toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              month: 'short', 
+              day: 'numeric' 
+            }),
+            icon: item.weather[0].icon,
+            status: item.weather[0].main
+          }))
+        };
+        
+        setData(forecastData);
+      } catch (err) {
+        setError("Failed to fetch weather data. Please try another location.");
+        console.error("API error:", err);
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchData();
   }, [sname]);
-  return (
-    <>
-      <div className="container-fliud d-flex align-items-center justify-content-center p-5 bg-success-subtle mt-2">
-        <div className="container">
-          <div className="row justify-content-around align-items-center gap-2">
-            <div className="col-5 p-4 border border-dark-subtle spacial-card d-flex flex-column justify-content-center align-items-center">
-              <img
-                src={`http://openweathermap.org/img/w/${data.icon1}.png`}
-                alt="weather-image"
-                style={{ width: "13rem" }}
-              />
-              <p className="fs-5 mt-2 p-2">
-                celsius: {data.celcius1 ? `${data.celcius1}°C` : "Loading..."}
-              </p>
-            </div>
-            
-            <div className="col-5 p-4 border border-dark-subtle spacial-card text-center">
-              
-              <h5 className=" text-start mb-2">Current Status</h5>
-              <h3>{data.city || "Loading..."}</h3>
-              <p>Date :{data.date1}</p>
-              <p>Status: {data.status || "Loading..."}</p>
-              <p>
-                Humidity: {data.humidity ? `${data.humidity}%` : "Loading..."}
-              </p>
-              <p>Country: {data.country || "Loading..."}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="container-fluid bg-info-subtle">
-        <div className="row justify-content-center align-items-center g-2 mt-2">
-          <div className="col-12">
-            <h2>Today's HightLights</h2>
-          </div>
 
-          <div className="col-12 d-flex p-2 gap-5 justify-content-center">
-            <TodayHighlights
-              image={windimage}
-              currentData={data.wind}
-              title="wind"
-            />
-            <TodayHighlights
-              image={humidityimage}
-              currentData={data.humidity}
-              title="humidity"
-            />
-            <TodayHighlights
-              image={airpresureimage}
-              currentData={data.pressure}
-              title="pressure"
-            />
-            <TodayHighlights
-              image={visibilityimage}
-              currentData={data.visibility}
-              title="visibility"
-            />
+  if (loading) {
+    return (
+      <div className="weather-loading">
+        <ImSpinner8 className="spinner" size={50} />
+        <p>Loading weather data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="weather-error">
+        <p className="error-message">{error}</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="weather-welcome">
+        <h2>Welcome to WeatherCast</h2>
+        <p>Search for a city to view weather information</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="weather-container">
+      {/* Current Weather Section */}
+      <section className="current-weather">
+        <div className="weather-card">
+          <div className="weather-main">
+            <div className="weather-icon">
+              {weatherIcons[data.current.icon] || <WiDaySunny size={80} />}
+            </div>
+            <div className="weather-temp">
+              <h2>{Math.round(data.current.temp)}°C</h2>
+              <p>Feels like {Math.round(data.current.feels_like)}°C</p>
+            </div>
+          </div>
+          
+          <div className="weather-details">
+            <h3 className="location">
+              <BsGeoAlt /> {data.location.city}, {data.location.country}
+            </h3>
+            <p className="date">
+              <BsCalendarDate /> {data.current.date}
+            </p>
+            <p className="status">
+              <BsClouds /> {data.current.description}
+            </p>
           </div>
         </div>
-      </div>
-      <div className="container-fluid bg-danger-subtle mt-5 mb-5 p-3">
-        <div className="row  ">
-          <div className="col-12">
-            <h3>Up Comming day's</h3>
-          </div>
-          <div className="col-12 d-flex justify-content-center gap-5 ">
-            <UpComingDays
-              date={data.date2}
-              image={data.icon2}
-              celcius={data.celcius2}
-            />
-            <UpComingDays
-              date={data.date3}
-              image={data.icon3}
-              celcius={data.celcius3}
-            />
-            <UpComingDays
-              date={data.date4}
-              image={data.icon4}
-              celcius={data.celcius4}
-            />
-            <UpComingDays
-              date={data.date5}
-              image={data.icon5}
-              celcius={data.celcius5}
-            />
-          </div>
+      </section>
+
+      {/* Today's Highlights */}
+      <section className="highlights-section">
+        <h2>Today's Highlights</h2>
+        <div className="highlights-grid">
+          <TodayHighlights
+            icon={<FiWind size={24} />}
+            value={`${data.current.wind} km/h`}
+            title="Wind Speed"
+          />
+          <TodayHighlights
+            icon={<FiDroplet size={24} />}
+            value={`${data.current.humidity}%`}
+            title="Humidity"
+          />
+          <TodayHighlights
+            icon={<FiBarChart2 size={24} />}
+            value={`${data.current.pressure} hPa`}
+            title="Pressure"
+          />
+          <TodayHighlights
+            icon={<FiEye size={24} />}
+            value={`${data.current.visibility} km`}
+            title="Visibility"
+          />
         </div>
-      </div>
-    </>
+      </section>
+
+      {/* Forecast Section */}
+      <section className="forecast-section">
+        <h2>4-Day Forecast</h2>
+        <div className="forecast-grid">
+          {data.forecast.map((day, index) => (
+            <UpComingDays
+              key={index}
+              date={day.date}
+              icon={weatherIcons[day.icon] || <WiDaySunny size={40} />}
+              temp={Math.round(day.temp)}
+              status={day.status}
+            />
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 

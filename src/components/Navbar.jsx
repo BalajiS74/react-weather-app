@@ -1,46 +1,105 @@
 import React, { useEffect, useState } from "react";
+import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm } from "react-icons/wi";
+import '../App.css'
 function Navbar({ name, setName }) {
-  const [isonline, setOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [darkMode, setDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [weatherIcon, setWeatherIcon] = useState(<WiDaySunny />);
 
-  const internetCheck = () => {
-    setOnline(navigator.onLine);
+  // Internet connection status
+  const checkInternetConnection = () => {
+    setIsOnline(navigator.onLine);
   };
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    document.body.classList.toggle('dark-mode');
+  };
+
+  // Handle search
+  const handleSearch = (e) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      setName(searchQuery);
+      setSearchQuery("");
+      // Simulate weather icon change based on search
+      const icons = [<WiDaySunny />, <WiCloudy />, <WiRain />, <WiSnow />, <WiThunderstorm />];
+      setWeatherIcon(icons[Math.floor(Math.random() * icons.length)]);
+    }
+  };
+
   useEffect(() => {
-    window.addEventListener("online", internetCheck);
-    window.addEventListener("offline", internetCheck);
+    window.addEventListener("online", checkInternetConnection);
+    window.addEventListener("offline", checkInternetConnection);
+
+    return () => {
+      window.removeEventListener("online", checkInternetConnection);
+      window.removeEventListener("offline", checkInternetConnection);
+    };
   }, []);
+
   return (
-    <>
-      <header className="container-fluid bg-info py-2">
-        <div className="row align-items-center ">
-          <div className="col-3 d-flex justify-content-center align-items-center">
-            <h4 className="fst-italic" style={{letterSpacing:"2px"}}>weather☁️</h4>
+    <header className={`navbar-container ${darkMode ? 'dark' : 'light'}`}>
+      <div className="navbar-content">
+        {/* Logo/Title Section */}
+        <div className="logo-section">
+          <div className="weather-icon">
+            {weatherIcon}
           </div>
-          <div className="col-6 d-flex gap-3">
+          <h1 className="app-title">
+            Weather<span className="highlight">Cast</span>
+          </h1>
+        </div>
+
+        {/* Search Section */}
+        <div className="search-section">
+          <div className="search-container">
             <input
               type="text"
-              className="form-control w-50"
-              placeholder="Search..."
-              style={{ marginLeft: "120px" }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setName(e.target.value);
-                }
-              }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearch}
+              placeholder="Search location..."
+              className="search-input"
               spellCheck="false"
             />
-          </div>
-          <div className="col-2 d-flex justify-content-between">
-            <i
-              className="bi bi-moon-stars bg-light py-2 px-3"
-              style={{ borderRadius: "50%", cursor: "pointer" }}
-            ></i>
-            <h5 className={isonline?'text-success':'text-danger'} style={{backgroundColor:"white",padding:"5px",width:"130px",textAlign:"center",borderRadius:"20px"}}> {isonline?'online':'offline'}</h5>
+            <button 
+              className="search-button"
+              onClick={() => searchQuery.trim() && handleSearch({ key: 'Enter' })}
+            >
+              <i className="bi bi-search"></i>
+            </button>
           </div>
         </div>
-      </header>
-    </>
-  );    
+
+        {/* Controls Section */}
+        <div className="controls-section">
+          <button 
+            className={`theme-toggle ${darkMode ? 'dark' : 'light'}`}
+            onClick={toggleDarkMode}
+            aria-label="Toggle dark mode"
+          >
+            {darkMode ? (
+              <i className="bi bi-sun-fill"></i>
+            ) : (
+              <i className="bi bi-moon-stars-fill"></i>
+            )}
+          </button>
+          
+          <div className={`connection-status ${isOnline ? 'online' : 'offline'}`}>
+            <div className="status-indicator"></div>
+            <span>{isOnline ? 'Online' : 'Offline'}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
 }
 
 export default Navbar;
+
+// CSS (add to your stylesheet)
+/*
+
+*/
